@@ -1,6 +1,5 @@
 build
 .idea
-.vscode
 cmake-build-debug
 duckdb_unittest_tempdir/
 .DS_Store
@@ -10,3 +9,14 @@ test/python/__pycache__/
 scripts/data/
 duckdb_benchmark_data/
 duckdb/
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!*.code-workspace
+
+# Built Visual Studio Code Extensions
+*.vsix

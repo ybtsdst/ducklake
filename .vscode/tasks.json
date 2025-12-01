@@ -1,0 +1,43 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "debug"
+            ],
+            "options": {
+                "env": {
+                    "CMAKE_BUILD_PARALLEL_LEVEL": "${env:BUILD_PROC}",
+                    "GEN": "ninja",
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build (Release)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "release"
+            ],
+            "options": {
+                "env": {
+                    "CMAKE_BUILD_PARALLEL_LEVEL": "${env:BUILD_PROC}",
+                    "GEN": "ninja",
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}

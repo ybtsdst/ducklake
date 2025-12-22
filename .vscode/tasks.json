@@ -12,11 +12,35 @@
                 "env": {
                     "CMAKE_BUILD_PARALLEL_LEVEL": "${env:BUILD_PROC}",
                     "GEN": "ninja",
+                    "ENABLE_POSTGRES_SCANNER": "1"
                 }
             },
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build (reldebug)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "reldebug",
+                "VERBOSE=1"
+            ],
+            "options": {
+                "env": {
+                    "CMAKE_BUILD_PARALLEL_LEVEL": "${env:BUILD_PROC}",
+                    "GEN": "ninja",
+                    "DUCKDB_PLATFORM": "linux_amd64",
+                    "EXT_FLAGS": "-DSKIP_EXTENSIONS=jemalloc -DCMAKE_INSTALL_PREFIX=/opt/transwarp/ducklake_reldebug -DCMAKE_CXX_FLAGS=\"-fno-omit-frame-pointer\"",
+                    "ENABLE_POSTGRES_SCANNER": "1"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
             },
             "problemMatcher": []
         },
@@ -31,6 +55,9 @@
                 "env": {
                     "CMAKE_BUILD_PARALLEL_LEVEL": "${env:BUILD_PROC}",
                     "GEN": "ninja",
+                    "DUCKDB_PLATFORM": "linux_amd64",
+                    "EXT_FLAGS": "-DSKIP_EXTENSIONS=jemalloc -DCMAKE_INSTALL_PREFIX=/opt/transwarp/ducklake_reldebug",
+                    "ENABLE_POSTGRES_SCANNER": "1"
                 }
             },
             "group": {

@@ -21,7 +21,9 @@ RUN \
   sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
   echo 'Acquire::ForceIPv4 "true";' >> /etc/apt/apt.conf.d/1000-force-ipv4-transport && \    
   echo 'Acquire::Retries "100";' >> /etc/apt/apt.conf.d/80-retries && \
-  apt-get update -y && \    
+  echo "Acquire::http::Proxy \"${HTTP_PROXY}\";" >> /etc/apt/apt.conf.d/99-proxy && \
+  echo "Acquire::https::Proxy \"${HTTPS_PROXY}\";" >> /etc/apt/apt.conf.d/99-proxy && \
+  apt-get update -y && \
   # basics    
   PKGS="software-properties-common build-essential" && \
   apt-get install -y ${PKGS} && \    
@@ -41,8 +43,24 @@ RUN \
   rm -rf /var/lib/apt/lists/*
 
 RUN \
+  # docker cli
+  apt-get update \
+  && apt-get install -y ca-certificates curl \
+  && install -m 0755 -d /etc/apt/keyrings \
+  && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+  && chmod a+r /etc/apt/keyrings/docker.asc \
+  && . /etc/os-release \
+  && echo "Types: deb\nURIs: https://download.docker.com/linux/ubuntu\nSuites: ${UBUNTU_CODENAME:-$VERSION_CODENAME}\nComponents: stable\nArchitectures: $(dpkg --print-architecture)\nSigned-By: /etc/apt/keyrings/docker.asc" \
+  > /etc/apt/sources.list.d/docker.sources \
+  && apt-get update \
+  && apt-get install -y docker-ce-cli \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY tmp/clangd-linux-21.1.0.zip /tmp/clangd.zip
+
+RUN \
     # clangd
-    wget "https://github.com/clangd/clangd/releases/download/${CLANGD_VERSION}/clangd-linux-${CLANGD_VERSION}.zip" -O /tmp/clangd.zip && \
+    #wget "https://github.com/clangd/clangd/releases/download/${CLANGD_VERSION}/clangd-linux-${CLANGD_VERSION}.zip" -O /tmp/clangd.zip && \
     unzip /tmp/clangd.zip -d ${CLANGD_HOME} && \
     mv ${CLANGD_HOME}/clangd_${CLANGD_VERSION}/* ${CLANGD_HOME} && \
     rm -rf ${CLANGD_HOME}/clangd_${CLANGD_VERSION} && \
@@ -59,18 +77,36 @@ RUN \
     chmod o+rwx /coredumps
 
 RUN \
+  # Install Node.js 20.x
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+  apt-get update -y && \
+  apt-get install -y nodejs && \
+  apt-get autoclean
+
+RUN \
   # Create the user
   groupadd --gid $USER_GID $DEV_USERNAME \
   && useradd --uid $USER_UID --gid $USER_GID -m $DEV_USERNAME \
   #
   # [Optional] Add sudo support. Omit if you don't need to install software after connecting.
   && echo $DEV_USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$DEV_USERNAME \
-  && chmod 0440 /etc/sudoers.d/$DEV_USERNAME
+  && chmod 0440 /etc/sudoers.d/$DEV_USERNAME && \
+  # add user to docker group
+  groupadd -f docker \
+  && usermod -aG docker $DEV_USERNAME
 
 ENV LC_ALL="en_US.UTF-8"
 ENV LANG="en_US.UTF-8"
 
 USER $DEV_USERNAME
+
+RUN \
+  # Install Claude Code in user space for auto-update support
+  mkdir -p ~/.npm-global && \
+  npm config set prefix ~/.npm-global && \
+  npm install -g @anthropic-ai/claude-code
+
+ENV PATH=/home/${DEV_USERNAME}/.npm-global/bin:${PATH}
 
 # unset
 ENV http_proxy=

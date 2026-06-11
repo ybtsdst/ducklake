@@ -21,6 +21,8 @@ services:
       - ..:/opt/transwarp/ducklake:cached
       - /var/run/docker.sock:/var/run/docker.sock
       - ${LOCAL_CCACHE}:/opt/ccache:cached
+      - ${HOME}/.claude:/home/${DEV_USERNAME:-ybtsdst}/.claude:cached
+      - ${HOME}/.claude.json:/home/${DEV_USERNAME:-ybtsdst}/.claude.json:cached
     working_dir: /opt/transwarp/ducklake
     network_mode: host 
     tty: true

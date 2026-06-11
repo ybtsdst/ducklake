@@ -26,19 +26,19 @@
     "clangd.path": "/usr/local/lib/clangd/bin/clangd",
     "clangd.arguments": [
         "--background-index",
+        "--background-index-priority=low",
         "--clang-tidy",
-        "--log=verbose",
-        "--pch-storage=memory",
+        "--log=error", // verbose/error
+        "--pch-storage=disk", // disk/memory
         "--query-driver=/usr/bin/gcc",
-        "--suggest-missing-includes",
-        "--cross-file-rename",
         "--compile-commands-dir=/opt/transwarp/ducklake/build/debug",
         "--completion-style=detailed",
-        "-j=4",
+        "-j=12",
         "--all-scopes-completion",
         // "--limit-references=100",
         // "--limit-results=20",
-        "--malloc-trim"
+        "--malloc-trim",
+        "--completion-parse=always"
     ],
     "terminal.integrated.profiles.linux": {
         "bash (login)": {
@@ -48,7 +48,7 @@
             ]
         }
     },
-    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.defaultProfile.linux": "bash (login)",
     "C_Cpp.default.cppStandard": "c++20",
     "C_Cpp.default.cStandard": "c17",
     "C_Cpp.default.browse.databaseFilename": "${workspaceFolder}/.vscode/.browse.c_cpp.db",

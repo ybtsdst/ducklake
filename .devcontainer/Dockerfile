@@ -27,19 +27,32 @@ RUN \
   # basics    
   PKGS="software-properties-common build-essential" && \
   apt-get install -y ${PKGS} && \    
-  add-apt-repository -y ppa:ubuntu-toolchain-r/ppa && \
-  apt-get update -y && \    
-  PKGS="vim sudo locales git curl unzip wget zip iputils-ping iproute2 tzdata tree jq" && \    
-  PKGS="${PKGS} gdb net-tools telnet cmake ninja-build ccache linux-tools-common linux-tools-generic" && \    
-  apt-get install -y ${PKGS} && \    
-  locale-gen en_US.UTF-8 && \    
+  add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
+  apt-get update -y && \
+  PKGS="vim sudo locales git curl unzip wget zip iputils-ping iproute2 tzdata tree jq" && \
+  PKGS="${PKGS} gdb net-tools telnet cmake ninja-build ccache linux-tools-common linux-tools-generic" && \
+  apt-get install -y ${PKGS} && \
+  locale-gen en_US.UTF-8 && \
   echo ${TZ} > /etc/timezone && \
   ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
   dpkg-reconfigure tzdata && \
+  # gcc-13: postgres_scanner (fetched by ENABLE_POSTGRES_SCANNER=1) does not
+  # compile with jammy's gcc 11 (unique_ptr implicit-move conversions)
+  PKGS="gcc-13 g++-13" && \
+  apt-get install -y ${PKGS} && \
+  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 60 \
+    --slave /usr/bin/g++ g++ /usr/bin/g++-13 \
+    --slave /usr/bin/gcov gcov /usr/bin/gcov-13 && \
   # deps
-  # PKGS="libgtest-dev libtbb-dev" && \    
-  # apt-get install -y ${PKGS} && \    
-  apt-get autoclean && apt-get autoremove && \    
+  # libssl-dev: required by postgres_scanner
+  # libpq-dev: postgres_scanner needs libpq >= 18 (OAuth API), so take it from PGDG
+  install -d /usr/share/postgresql-common/pgdg && \
+  curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc && \
+  echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+  apt-get update -y && \
+  PKGS="libssl-dev libpq-dev" && \
+  apt-get install -y ${PKGS} && \
+  apt-get autoclean && apt-get autoremove && \
   rm -rf /var/lib/apt/lists/*
 
 RUN \
@@ -65,6 +78,20 @@ RUN \
     mv ${CLANGD_HOME}/clangd_${CLANGD_VERSION}/* ${CLANGD_HOME} && \
     rm -rf ${CLANGD_HOME}/clangd_${CLANGD_VERSION} && \
     rm -rf /tmp/clangd.zip
+
+ENV CROARING_VERSION=4.7.1
+
+RUN \
+    # CRoaring: required by find_package(roaring CONFIG REQUIRED) for deletion
+    # vectors; jammy's libroaring-dev (0.2.66) predates the roaring:: namespace,
+    # so build a recent release from source
+    git clone --depth 1 --branch v${CROARING_VERSION} https://github.com/RoaringBitmap/CRoaring.git /tmp/croaring && \
+    cmake -S /tmp/croaring -B /tmp/croaring/build -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+      -DENABLE_ROARING_TESTS=OFF -DROARING_BUILD_C_TESTS_AS_CPP=OFF && \
+    cmake --build /tmp/croaring/build -j && \
+    cmake --install /tmp/croaring/build && \
+    rm -rf /tmp/croaring
 
 RUN \
     # proxy for wget
